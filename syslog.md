@@ -78,7 +78,57 @@ local5.* @@10.10.100.166:514
 重启
 
 ```shell
+# centos
 systemctl restart rsyslog
 systemctl enable rsyslog
+
+# ubuntu
+service rsyslog restart
+
+```
+
+## syslog服务端
+
+```shell
+# 将一下内容添加进 `/etc/rsyslog.conf`
+
+# Provides UDP syslog reception
+$ModLoad imudp
+$UDPServerRun 514
+
+# Provides TCP syslog reception
+$ModLoad imtcp
+$InputTCPServerRun 514
+
+# Use default timestamp format
+$ActionFileDefaultTemplate RSYSLOG_TraditionalFileFormat
+$EscapeControlCharactersOnReceive off
+template( name="jsonformat"
+          type="string"
+          string="{%timegenerated:::date-rfc3339,jsonf:@timestamp%,\"source\":\"1\",%fromhost-ip:::jsonf:host%,%syslogseverity:::jsonf:severity%,%hostname:::jsonf:hostname%,%rawmsg:::jsonf:message%}"
+)
+
+# Turn off message reception via local log socket;
+# local messages are retrieved through imjournal now.
+$OmitLocalLogging on
+
+# File to store the position in the journal
+$IMJournalStateFile imjournal.state
+
+if($fromhost-ip != "127.0.0.1") then{
+        *.*  stop
+}
+
+```
+
+重启
+
+```shell
+# centos
+systemctl restart rsyslog
+systemctl enable rsyslog
+
+# ubuntu
+service rsyslog restart
 ```
 
