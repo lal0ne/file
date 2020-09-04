@@ -85,6 +85,8 @@ systemctl enable rsyslog
 # ubuntu
 service rsyslog restart
 
+# kali
+/etc/init.d/rsyslog restart
 ```
 
 ## syslog服务端
