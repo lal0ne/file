@@ -70,7 +70,7 @@ service grafana-server restart
 
 访问http://ip:3000，进插件，开启zabbix
 
-![zabbix](.\img\grafana_01.png)
+![zabbix](./img/grafana_01.png)
 
 修改配置文件 `/etc/grafana/grafana.ini`
 
