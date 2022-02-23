@@ -148,6 +148,72 @@ DumpIOOutput On
 # 产生日志在error中
 ```
 
+## apache反向代理
+
+```shell
+# 开启如下模块
+mod_proxy.so
+mod_proxy_ajp.so
+mod_proxy_balancer.so
+mod_proxy_connect.so
+mod_proxy_http.so
+
+# 简单的反向代理
+---
+# 确保Location:将从后端生成的和标头修改为指向反向代理，而不是返回自身：
+ProxyPass "/"  "http://www.example.com/"
+ProxyPassReverse "/"  "http://www.example.com/"
+# 只能代理特定的URI：
+ProxyPass "/images"  "http://www.example.com/"
+ProxyPassReverse "/images"  "http://www.example.com/"
+---
+
+# 集群和均衡器
+---
+<Proxy balancer://myset>
+    BalancerMember http://www2.example.com:8080
+    BalancerMember http://www3.example.com:8080
+    ProxySet lbmethod=bytraffic
+</Proxy>
+
+ProxyPass "/images/"  "balancer://myset/"
+ProxyPassReverse "/images/"  "balancer://myset/"
+---
+
+# 平衡器和BalancerMember配置
+---
+# 要http://www3.example.com:8080处理3倍的流量（超时时间为1秒）
+<Proxy balancer://myset>
+    BalancerMember http://www2.example.com:8080
+    BalancerMember http://www3.example.com:8080 loadfactor=3 timeout=1
+    ProxySet lbmethod=bytraffic
+</Proxy>
+
+ProxyPass "/images"  "balancer://myset/"
+ProxyPassReverse "/images"  "balancer://myset/"
+---
+
+# 故障转移
+---
+# 1.http://spare1.example.com:8080和 http://spare2.example.com:8080只发送的流量，如果一个或两个http://www2.example.com:8080或 http://www3.example.com:8080不可用。（一个备件将用于替换同一平衡器组中一个不可用的成员。）
+# 2.http://hstandby.example.com:8080仅当平衡器集中的所有其他工作器0都不可用时，才发送流量。
+# 3.如果所有负载均衡器组的0工作人员，备件和备用服务器均不可用，则只有这样才能使均衡器组中的 http://bkup1.example.com:8080和 http://bkup2.example.com:8080工人 1轮换。
+<Proxy balancer://myset>
+    BalancerMember http://www2.example.com:8080
+    BalancerMember http://www3.example.com:8080 loadfactor=3 timeout=1
+    BalancerMember http://spare1.example.com:8080 status=+R
+    BalancerMember http://spare2.example.com:8080 status=+R
+    BalancerMember http://hstandby.example.com:8080 status=+H
+    BalancerMember http://bkup1.example.com:8080 lbset=1
+    BalancerMember http://bkup2.example.com:8080 lbset=1
+    ProxySet lbmethod=byrequests
+</Proxy>
+
+ProxyPass "/images/"  "balancer://myset/"
+ProxyPassReverse "/images/"  "balancer://myset/"
+---
+```
+
 ## 执行命令记录
 
 ```shell
